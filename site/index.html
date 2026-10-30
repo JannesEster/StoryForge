@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>StoryForge</title>
+    <meta
+      name="description"
+      content="Interactive choose your path stories told for the reader's age. Gentle for kids, richer for adults, and romance fades to black."
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,680&family=Nunito:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to the story setup</a>
+    <header class="site-header">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+          <rect width="64" height="64" rx="14" fill="currentColor" />
+          <path d="M14 18h16c6 0 10 3 10 8s-4 8-10 8H14V18z" fill="#fffaf3" />
+          <path d="M18 34h14c5 0 8 3 8 7s-3 7-8 7H18V34z" fill="#f2c14e" />
+          <path d="M16 16v34" stroke="#e07a3d" stroke-width="3" stroke-linecap="round" />
+        </svg>
+        <div>
+          <p class="eyebrow">Choose your path</p>
+          <h1>StoryForge</h1>
+        </div>
+      </div>
+      <p id="mode-badge" class="badge" hidden></p>
+    </header>
+
+    <main id="main">
+      <section id="step-start" aria-labelledby="start-title">
+        <h2 id="start-title">Who is reading?</h2>
+        <p class="lead">
+          Tell us a name and an age group. The story, the choices, and anything you type stay right for that age.
+        </p>
+        <form id="start-form">
+          <div class="field">
+            <label for="reader-name">What should we call the reader?</label>
+            <input id="reader-name" name="readerName" type="text" maxlength="40" autocomplete="nickname" required />
+            <p id="name-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <fieldset>
+            <legend>How old is the reader?</legend>
+            <div id="age-choices" class="choice-grid"></div>
+            <p id="age-error" class="field-error" role="alert" hidden></p>
+          </fieldset>
+          <button class="primary" type="submit">Choose a theme</button>
+        </form>
+      </section>
+
+      <section id="step-theme" hidden aria-labelledby="theme-title">
+        <h2 id="theme-title" tabindex="-1">What kind of story?</h2>
+        <p id="theme-lead" class="lead"></p>
+        <form id="theme-form">
+          <fieldset>
+            <legend>Pick a theme</legend>
+            <div id="theme-choices" class="choice-grid"></div>
+            <p id="theme-error" class="field-error" role="alert" hidden></p>
+          </fieldset>
+          <div class="button-row">
+            <button class="secondary" id="theme-back" type="button">Back</button>
+            <button class="primary" type="submit">Start the story</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="step-story" hidden aria-labelledby="story-title">
+        <div class="story-top">
+          <h2 id="story-title" tabindex="-1">Your story</h2>
+          <p id="story-meta"></p>
+        </div>
+        <div id="story-log" class="story-log"></div>
+        <div id="story-latest" class="story-latest" tabindex="-1" aria-live="polite"></div>
+        <div id="story-actions">
+          <h3 id="options-label">What happens next?</h3>
+          <div id="options" class="options" role="group" aria-labelledby="options-label"></div>
+          <form id="free-form">
+            <label for="free-text">Or write what happens next</label>
+            <textarea id="free-text" name="freeText" maxlength="240" rows="3"></textarea>
+            <div class="free-row">
+              <p id="free-help">Keep it kind and fitting for this age group.</p>
+              <p id="free-count" aria-live="polite">0 / 240</p>
+            </div>
+            <p id="free-error" class="field-error" role="alert" hidden></p>
+            <button class="primary" type="submit">Use my idea</button>
+          </form>
+          <p id="story-error" class="field-error" role="alert" hidden></p>
+          <button class="secondary" id="restart" type="button">Start over</button>
+        </div>
+        <p id="loading" class="loading" hidden aria-live="polite">The story is unfolding.</p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p id="footer-note"></p>
+    </footer>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
