@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "storyforge",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-30",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  // Non-secret settings. Put OPENAI_API_KEY on the Worker with:
+  // npx wrangler secret put OPENAI_API_KEY
+  "vars": {
+    "LLM_PROVIDER": "workers-ai",
+    "WORKERS_AI_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "OPENAI_MODEL": "gpt-4o-mini",
+    "OPENAI_BASE_URL": "https://api.openai.com/v1"
+  }
+}

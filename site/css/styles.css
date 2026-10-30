@@ -1,0 +1,326 @@
+:root {
+  color-scheme: light;
+  --ink: #241910;
+  --muted: #5c4e3f;
+  --paper: #f4eadb;
+  --paper-deep: #e7d7c1;
+  --card: #fffaf3;
+  --line: #e3d2b8;
+  --teal: #0f6e56;
+  --teal-deep: #0b4f3e;
+  --on-teal: #fffaf3;
+  --apricot: #c65d24;
+  --gold: #f2c14e;
+  --focus: #0b5cab;
+  --danger: #8d2f2f;
+  --shadow: 0 16px 40px rgba(60, 36, 12, 0.08);
+  --font-ui: "Nunito", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-story: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --ink: #f6efe4;
+    --muted: #d2c3b0;
+    --paper: #1b1612;
+    --paper-deep: #2a221b;
+    --card: #2c241c;
+    --line: #4a3d31;
+    --teal: #8fd9c6;
+    --teal-deep: #d7fff4;
+    --on-teal: #10241d;
+    --apricot: #f0a36a;
+    --gold: #f2c14e;
+    --focus: #9ec1ff;
+    --danger: #ffb4b4;
+    --shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-ui);
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(242, 193, 78, 0.35), transparent 28rem),
+    radial-gradient(circle at top right, rgba(15, 110, 86, 0.16), transparent 24rem),
+    var(--paper);
+}
+
+.skip {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  background: var(--card);
+  color: var(--ink);
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  z-index: 5;
+}
+
+.skip:focus { top: 1rem; }
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.site-header,
+main,
+.site-footer {
+  width: min(42rem, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 0 0.5rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.logo {
+  width: 3.25rem;
+  height: 3.25rem;
+  color: var(--teal);
+  flex: none;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--apricot);
+}
+
+h1, h2, h3 { font-family: var(--font-story); line-height: 1.15; }
+
+h1 { margin: 0; font-size: 2rem; }
+
+h2 { margin: 0 0 0.4rem; font-size: 1.85rem; }
+
+h3 { margin: 0 0 0.75rem; font-size: 1.35rem; }
+
+.badge {
+  margin: 0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #241910;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+main {
+  padding-bottom: 2rem;
+}
+
+section[aria-labelledby] {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 1.4rem;
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+
+.lead { margin-top: 0; color: var(--muted); }
+
+form { display: grid; gap: 1.1rem; }
+
+.field { display: grid; gap: 0.4rem; }
+
+label, legend {
+  font-weight: 800;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+input[type="text"],
+textarea {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 0.9rem;
+  padding: 0.85rem 1rem;
+}
+
+textarea { resize: vertical; min-height: 6rem; }
+
+.choice-grid { display: grid; gap: 0.7rem; }
+
+.choice {
+  display: block;
+  position: relative;
+  cursor: pointer;
+}
+
+.choice input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.choice-body {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  min-height: 3.25rem;
+}
+
+.choice-title { font-weight: 800; }
+
+.choice-meta, .choice-blurb { color: var(--muted); font-size: 0.98rem; }
+
+.choice input:focus-visible + .choice-body,
+.choice input:checked + .choice-body {
+  border-color: var(--teal);
+  box-shadow: inset 0 0 0 1px var(--teal);
+}
+
+.choice input:checked + .choice-body {
+  background: color-mix(in srgb, var(--teal) 12%, var(--card));
+}
+
+button {
+  font: inherit;
+  font-weight: 800;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  min-height: 3rem;
+  padding: 0.75rem 1.15rem;
+  cursor: pointer;
+}
+
+button:disabled { cursor: wait; opacity: 0.7; }
+
+.primary {
+  background: var(--teal);
+  color: var(--on-teal);
+}
+
+.secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.button-row .primary { flex: 1; }
+
+.field-error { margin: 0; color: var(--danger); font-weight: 800; }
+
+.story-top { margin-bottom: 0.5rem; }
+
+#story-meta { margin: 0; color: var(--muted); }
+
+.story-log, .story-latest { display: grid; gap: 0.9rem; }
+
+.beat {
+  margin: 0;
+  padding: 0.2rem 0 0.8rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.story-latest .beat {
+  border-bottom: 0;
+  font-family: var(--font-story);
+  font-size: 1.28rem;
+  line-height: 1.45;
+}
+
+.beat p { margin: 0 0 0.7rem; }
+
+.options { display: grid; gap: 0.7rem; }
+
+.option {
+  text-align: left;
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--line);
+  border-radius: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.option-index {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--gold);
+  color: #241910;
+  flex: none;
+}
+
+.free-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.free-row p { margin: 0; }
+
+.loading { font-weight: 800; color: var(--teal-deep); }
+
+.site-footer {
+  padding: 0 0 2rem;
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+
+@media (min-width: 700px) {
+  h1 { font-size: 2.4rem; }
+  section[aria-labelledby] { padding: 1.6rem; }
+  .choice-grid { grid-template-columns: 1fr 1fr; }
+  .choice-grid .choice:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
