@@ -121,8 +121,6 @@ const ROMANCE = [
 
 const YOUNG_SCARY_READER = [
   "scary",
-  "scare",
-  "scared",
   "scream",
   "screaming",
   "nightmare",

@@ -37,11 +37,23 @@ describe("parseStoryBeat", () => {
     expect(beat?.options).toEqual(["Look around", "Ask a friend", "Try a kind idea"]);
   });
 
-  it("returns null when the options are not usable", () => {
-    expect(parseStoryBeat({ text: "Hello there.", options: ["Only one"] })).toBeNull();
-    expect(parseStoryBeat({ text: "", options: ["A", "B", "C"] })).toBeNull();
+  it("returns null when the story text is missing", () => {
+    expect(parseStoryBeat({ text: "", options: ["Open the door", "Ask a friend", "Look up"] })).toBeNull();
     expect(parseStoryBeat("not json")).toBeNull();
     expect(parseStoryBeat({ nope: true })).toBeNull();
+  });
+
+  it("strips numbering and splits options crammed into one string", () => {
+    const numbered = parseStoryBeat({
+      text: "Sam finds a tiny door.",
+      options: ["1. Open the tiny door", "2. Ask the bird", "3) Bring a flower"],
+    });
+    expect(numbered?.options).toEqual(["Open the tiny door", "Ask the bird", "Bring a flower"]);
+    const crammed = parseStoryBeat({
+      text: "Sam finds a tiny door.",
+      options: ["1. Open the tiny door 2. Ask the bird 3. Bring a flower"],
+    });
+    expect(crammed?.options).toEqual(["Open the tiny door", "Ask the bird", "Bring a flower"]);
   });
 
   it("strips tags from story text", () => {

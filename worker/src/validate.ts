@@ -1,21 +1,24 @@
 import { isAgeGroup, isThemeAllowed, LIMITS } from "../../site/js/catalog.js";
+import { REDACTED_CHOICE } from "../../site/js/craft.js";
 import { screenModelOutput, screenReaderText } from "../../site/js/safety.js";
 import type { HistoryBeat, StoryChoice } from "./messages.js";
+
+export { REDACTED_CHOICE };
 
 export interface StoryInput {
   readerName: string;
   ageGroup: string;
   theme: string;
   history: HistoryBeat[];
+  customIdea: string;
+  bible: unknown;
+  storyState: unknown;
+  recent: unknown;
 }
 
 export type ValidationResult =
   | { ok: true; value: StoryInput }
   | { ok: false; status: number; error: string; code: string };
-
-/** Replaces disallowed free text so the original words never reach the model. */
-export const REDACTED_CHOICE =
-  "The reader asked for a next step that is outside the rules for this age group. Do not describe or quote it.";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -148,5 +151,17 @@ export function validateStoryRequest(body: unknown): ValidationResult {
     history.push(beat);
   }
 
-  return { ok: true, value: { readerName, ageGroup: body.ageGroup, theme: body.theme, history } };
+  return {
+    ok: true,
+    value: {
+      readerName,
+      ageGroup: body.ageGroup,
+      theme: body.theme,
+      history,
+      customIdea: typeof body.customIdea === "string" ? body.customIdea : "",
+      bible: body.bible,
+      storyState: body.storyState,
+      recent: body.recent,
+    },
+  };
 }

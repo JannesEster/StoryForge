@@ -174,6 +174,28 @@ describe("handleRequest", () => {
     expect(body.options).toHaveLength(3);
   });
 
+  it("refuses a custom idea that breaks the age rules without calling the model", async () => {
+    let called = false;
+    const response = await post(
+      {
+        readerName: "Sam",
+        ageGroup: "little-kids",
+        theme: "custom",
+        customIdea: "add a scary ghost",
+        history: [],
+      },
+      {
+        provider: provider(beat, () => {
+          called = true;
+        }),
+      },
+    );
+    expect(response.status).toBe(400);
+    expect(called).toBe(false);
+    const body = await response.json() as { error: string };
+    expect(body.error.toLowerCase()).not.toContain("ghost");
+  });
+
   it("rate limits per IP", async () => {
     const limiter = createRateLimiter(2, 60_000);
     const send = () =>

@@ -6,8 +6,9 @@
 export const LIMITS = {
   nameMax: 40,
   freeTextMax: 240,
+  customIdeaMax: 300,
   historyMax: 16,
-  promptHistoryMax: 8,
+  promptHistoryMax: 12,
   storyTextMax: 2500,
   optionMax: 180,
   bodyMax: 32000,
@@ -89,6 +90,7 @@ export function isTheme(id) {
  * @param {string} theme
  */
 export function isThemeAllowed(ageGroup, theme) {
+  if (theme === "custom") return isAgeGroup(ageGroup);
   const allowed = THEMES_BY_AGE[ageGroup];
   return Array.isArray(allowed) && allowed.includes(theme);
 }

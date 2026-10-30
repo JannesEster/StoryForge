@@ -1,8 +1,6 @@
 import { LIMITS } from "../../site/js/catalog.js";
-import { backupBeat, steeredBeat } from "../../site/js/fallback.js";
+import { acceptModelBeat, planStoryTurn, restedBeat } from "../../site/js/tell.js";
 import { corsHeaders, originAllowed } from "./cors.js";
-import { buildMessages, maxTokensFor } from "./messages.js";
-import { beatPassesSafety, parseStoryBeat, proseFallback } from "./parse.js";
 import { createProvider, ProviderConfigError, type ProviderEnv, type StoryProvider } from "./providers.js";
 import { createRateLimiter, type RateLimiter } from "./rate-limit.js";
 import { validateStoryRequest } from "./validate.js";
@@ -97,24 +95,40 @@ export async function handleRequest(request: Request, env: ProviderEnv, deps: Ha
     return json({ error: validated.error, code: validated.code }, validated.status, headers);
   }
 
-  const input = validated.value;
-  const last = input.history[input.history.length - 1];
-  if (last?.choice.blocked) {
-    const beat = steeredBeat({
-      readerName: input.readerName,
-      ageGroup: input.ageGroup,
-      theme: input.theme,
-    });
+  const plan = planStoryTurn(validated.value) as {
+    kind: string;
+    beat?: { text: string; options: string[] };
+    message?: string;
+    input?: {
+      readerName: string;
+      ageGroup: string;
+      theme: string;
+      history: unknown[];
+      bible?: unknown;
+      storyState?: unknown;
+    };
+    messages?: { role: "system" | "user" | "assistant"; content: string }[];
+    maxTokens?: number;
+  };
+  if (plan.kind === "steered" && plan.beat) {
     log({
       message: "steered",
       outcome: "steered",
-      ageGroup: input.ageGroup,
-      theme: input.theme,
+      ageGroup: validated.value.ageGroup,
+      theme: validated.value.theme,
       ms: Date.now() - started,
     });
-    return json({ text: beat.text, options: beat.options, steered: true }, 200, headers);
+    return json({ text: plan.beat.text, options: plan.beat.options, steered: true }, 200, headers);
+  }
+  if (plan.kind === "blocked-idea") {
+    log({ message: "blocked_idea", outcome: "steered", ms: Date.now() - started });
+    return json({ error: plan.message, code: "blocked_idea" }, 400, headers);
   }
 
+  const input = plan.input;
+  if (!input || !plan.messages || !plan.maxTokens) {
+    return json({ error: "The storyteller is resting. Please try again in a moment.", code: "upstream" }, 502, headers);
+  }
   let provider: StoryProvider;
   try {
     provider = deps.provider ?? createProvider(env);
@@ -125,34 +139,31 @@ export async function handleRequest(request: Request, env: ProviderEnv, deps: Ha
   }
 
   try {
-    const raw = await provider.complete(buildMessages(input), { maxTokens: maxTokensFor(input.ageGroup) });
-    const parsed = parseStoryBeat(raw);
-    const beat = parsed ?? proseFallback(raw, input.ageGroup, input.theme);
-    if (!beat || !beatPassesSafety(beat, input.ageGroup)) {
-      const backup = backupBeat({
-        readerName: input.readerName,
-        ageGroup: input.ageGroup,
-        theme: input.theme,
-      });
-      log({
-        message: "fallback",
-        outcome: "fallback",
-        ageGroup: input.ageGroup,
-        theme: input.theme,
-        provider: provider.id,
-        ms: Date.now() - started,
-      });
-      return json({ text: backup.text, options: backup.options, steered: false }, 200, headers);
-    }
+    const raw = await provider.complete(plan.messages, { maxTokens: plan.maxTokens });
+    const beat = (acceptModelBeat(raw, input) ?? restedBeat(input)) as {
+      text: string;
+      options: string[];
+      is_ending?: boolean;
+      rested?: boolean;
+      state?: unknown;
+      bible?: unknown;
+    };
     log({
-      message: "story",
-      outcome: "ok",
+      message: beat.rested ? "fallback" : "story",
+      outcome: beat.rested ? "fallback" : "ok",
       ageGroup: input.ageGroup,
       theme: input.theme,
       provider: provider.id,
       ms: Date.now() - started,
     });
-    return json({ text: beat.text, options: beat.options, steered: false }, 200, headers);
+    return json({
+      text: beat.text,
+      options: beat.options,
+      steered: false,
+      is_ending: Boolean(beat.is_ending),
+      state: beat.state,
+      bible: beat.bible,
+    }, 200, headers);
   } catch (error) {
     if (error instanceof ProviderConfigError) {
       log({ message: "config_error", outcome: "error", provider: provider.id, ms: Date.now() - started });

@@ -1,7 +1,8 @@
 import { AGE_GROUPS, LIMITS, THEMES, ageLabel, isThemeAllowed, themeLabel } from "./catalog.js";
 import { config } from "./config.js";
-import { demoBeat } from "./demo.js";
+import { BLOCKED_IDEA_MESSAGE, createBible, emptyStoryState, loadRecent, rememberStory, screenCustomIdea } from "./craft.js";
 import { screenReaderText } from "./safety.js";
+import { requestStory, storyMode } from "./tell.js";
 
 const startStep = document.querySelector("#step-start");
 const themeStep = document.querySelector("#step-theme");
@@ -29,16 +30,29 @@ const modeBadge = document.querySelector("#mode-badge");
 const footerNote = document.querySelector("#footer-note");
 const restartButton = document.querySelector("#restart");
 const themeBack = document.querySelector("#theme-back");
+const customIdea = document.querySelector("#custom-idea");
+const customCount = document.querySelector("#custom-count");
+const customError = document.querySelector("#custom-error");
+const startCustomButton = document.querySelector("#start-custom");
+const softStart = document.querySelector("#soft-start");
+const newStoryButton = document.querySelector("#new-story");
+const optionsLabel = document.querySelector("#options-label");
 
 const state = {
   readerName: "",
   ageGroup: "",
   theme: "",
   history: [],
+  bible: null,
+  storyState: emptyStoryState(),
+  customIdea: "",
   busy: false,
 };
 
-const demoMode = !config.workerUrl.trim();
+const mode = storyMode({
+  workerUrl: config.workerUrl,
+  demo: new URLSearchParams(window.location.search).get("demo") === "1",
+});
 const namePattern = /^[\p{L}][\p{L}\p{M}'’.\- ]{0,39}$/u;
 let generation = 0;
 
@@ -128,6 +142,13 @@ function showBeat(beat) {
   const partNumber = storyLog.children.length + storyLatest.children.length + 1;
   if (storyLatest.firstChild) storyLog.append(storyLatest.firstChild);
   storyLatest.replaceChildren(beatElement(beat.text, partNumber));
+  const ending = Boolean(beat.is_ending);
+  optionsLabel.hidden = ending;
+  optionsEl.hidden = ending;
+  freeForm.hidden = ending;
+  newStoryButton.hidden = !ending;
+  if (beat.state) state.storyState = beat.state;
+  if (beat.bible) state.bible = beat.bible;
   optionsEl.replaceChildren();
   beat.options.forEach((label, index) => {
     const button = document.createElement("button");
@@ -157,43 +178,43 @@ function clearStoryView() {
   setError(storyError, "");
 }
 
-async function requestStory(payload) {
-  if (demoMode) return demoBeat(payload);
-  const endpoint = `${config.workerUrl.trim().replace(/\/$/, "")}/api/story`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  let data = {};
-  try {
-    data = await response.json();
-  } catch {
-    data = {};
-  }
-  if (!response.ok) {
-    throw new Error(data.error || "The storyteller is resting. Please try again in a moment.");
-  }
-  if (typeof data.text !== "string" || !Array.isArray(data.options) || data.options.length !== 3) {
-    throw new Error("The storyteller sent a reply we could not read. Please try again.");
-  }
-  return data;
-}
-
 async function continueStory(history) {
   const ticket = ++generation;
   setBusy(true);
   setError(storyError, "");
+  loading.textContent = mode === "pollinations"
+    ? "The story is unfolding. This can take a little while."
+    : "The story is unfolding.";
   try {
-    const beat = await requestStory({
-      readerName: state.readerName,
-      ageGroup: state.ageGroup,
-      theme: state.theme,
-      history,
-    });
+    const beat = await requestStory(
+      {
+        readerName: state.readerName,
+        ageGroup: state.ageGroup,
+        theme: state.theme,
+        history,
+        customIdea: state.customIdea,
+        bible: state.bible,
+        storyState: state.storyState,
+        recent: loadRecent(),
+      },
+      { mode, workerUrl: config.workerUrl },
+    );
     if (ticket !== generation) return;
+    if (beat.blockedIdea) {
+      setError(customError, beat.message || BLOCKED_IDEA_MESSAGE);
+      softStart.hidden = false;
+      showStep("theme");
+      return;
+    }
     state.history = history;
     showBeat(beat);
+    if (history.length === 0) {
+      rememberStory({
+        firstLine: beat.text,
+        names: [state.readerName, state.bible?.sidekick].filter(Boolean),
+        seed: state.bible?.seed,
+      });
+    }
     freeText.value = "";
     updateCount();
   } catch (error) {
@@ -271,12 +292,79 @@ themeForm.addEventListener("submit", async (event) => {
     return;
   }
   state.theme = theme;
+  state.customIdea = "";
   state.history = [];
+  state.storyState = emptyStoryState();
+  state.bible = createBible({
+    readerName: state.readerName,
+    ageGroup: state.ageGroup,
+    theme,
+    recent: loadRecent(),
+  });
   storyMeta.textContent = `${state.readerName}, ${ageLabel(state.ageGroup)}, ${themeLabel(theme)}`;
   clearStoryView();
   showStep("story");
   await continueStory([]);
 });
+
+function updateCustomCount() {
+  customCount.textContent = `${customIdea.value.length} / ${LIMITS.customIdeaMax}`;
+}
+
+startCustomButton.addEventListener("click", async () => {
+  setError(customError, "");
+  softStart.hidden = true;
+  const screened = screenCustomIdea(customIdea.value, state.ageGroup);
+  if (!screened.ok) {
+    if (screened.code === "too_long") {
+      setError(customError, `Please keep your idea to ${LIMITS.customIdeaMax} characters.`);
+    } else if (screened.code === "blocked") {
+      setError(customError, BLOCKED_IDEA_MESSAGE);
+      softStart.hidden = false;
+    } else {
+      setError(customError, "Write an idea, or pick a theme above.");
+    }
+    return;
+  }
+  state.theme = "custom";
+  state.customIdea = screened.text;
+  state.history = [];
+  state.storyState = emptyStoryState();
+  state.bible = createBible({
+    readerName: state.readerName,
+    ageGroup: state.ageGroup,
+    theme: "custom",
+    customIdea: screened.text,
+    recent: loadRecent(),
+  });
+  storyMeta.textContent = `${state.readerName}, ${ageLabel(state.ageGroup)}, your idea`;
+  clearStoryView();
+  showStep("story");
+  await continueStory([]);
+});
+
+softStart.addEventListener("click", async () => {
+  softStart.hidden = true;
+  setError(customError, "");
+  customIdea.value = "";
+  updateCustomCount();
+  state.theme = "surprise";
+  state.customIdea = "";
+  state.history = [];
+  state.storyState = emptyStoryState();
+  state.bible = createBible({
+    readerName: state.readerName,
+    ageGroup: state.ageGroup,
+    theme: "surprise",
+    recent: loadRecent(),
+  });
+  storyMeta.textContent = `${state.readerName}, ${ageLabel(state.ageGroup)}, Surprise me`;
+  clearStoryView();
+  showStep("story");
+  await continueStory([]);
+});
+
+customIdea.addEventListener("input", updateCustomCount);
 
 freeForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -296,25 +384,58 @@ freeForm.addEventListener("submit", async (event) => {
 
 freeText.addEventListener("input", updateCount);
 
-restartButton.addEventListener("click", () => {
-  const ok = window.confirm("Start over and clear this story?");
-  if (!ok) return;
+function leaveStory(nextStep) {
   generation += 1;
   setBusy(false);
   state.history = [];
-  state.theme = "";
+  state.bible = null;
+  state.storyState = emptyStoryState();
+  state.customIdea = "";
   clearStoryView();
-  showStep("start");
+  newStoryButton.hidden = true;
+  freeForm.hidden = false;
+  optionsEl.hidden = false;
+  optionsLabel.hidden = false;
+  showStep(nextStep);
+}
+
+restartButton.addEventListener("click", () => {
+  const ok = window.confirm("Start over and clear this story?");
+  if (!ok) return;
+  state.theme = "";
+  leaveStory("start");
   nameInput.focus();
 });
 
+newStoryButton.addEventListener("click", () => {
+  const ok = window.confirm("Start a new story and leave this one?");
+  if (!ok) return;
+  leaveStory("theme");
+  themeStep.querySelector("h2")?.focus?.();
+});
+
+const modeCopy = {
+  demo: {
+    badge: "Demo mode",
+    footer: "Demo mode plays saved story parts in your browser. Add a Worker URL later if you want the checks to run on a server. Romance is for adults only and fades to black.",
+  },
+  worker: {
+    badge: "Live storyteller",
+    footer: "Every idea is checked on the server for this age group. Romance is for adults only and fades to black.",
+  },
+  pollinations: {
+    badge: "Storyteller",
+    footer: "Stories are told in your browser with a free storyteller, with no account and no key. Ideas are checked before they are sent. A Worker is the stronger setup later, because those checks then run on the server. Add ?demo=1 for saved demo stories. Romance is for adults only and fades to black.",
+  },
+};
+
 modeBadge.hidden = false;
-modeBadge.textContent = demoMode ? "Demo mode" : "Live storyteller";
-footerNote.textContent = demoMode
-  ? "Demo mode plays saved story parts in your browser. When a Worker URL is set, every idea is checked on the server. Romance is for adults only and fades to black."
-  : "Every idea is checked on the server for this age group. Romance is for adults only and fades to black.";
+modeBadge.textContent = modeCopy[mode].badge;
+footerNote.textContent = modeCopy[mode].footer;
 
 renderChoices(ageChoices, AGE_GROUPS, "age");
 freeText.maxLength = LIMITS.freeTextMax;
+customIdea.maxLength = LIMITS.customIdeaMax;
 updateCount();
+updateCustomCount();
 showStep("start");

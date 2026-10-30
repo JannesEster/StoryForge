@@ -4,7 +4,7 @@ StoryForge is a choose your path story site for GitHub Pages. A reader enters a 
 
 The age group changes the tone. Little kids get gentle stories in short sentences, with nothing scary. Kids get cozy adventures. Tweens and teens get age appropriate fantasy and adventure, without crude, sexual, gory, or overly frightening scenes. Adults can choose more mature themes. Romance is offered only to adults, and it fades to black. There is no explicit sexual content for anyone. Sexual content involving minors is never allowed, including when the reader is an adult.
 
-Until you deploy the Worker, the site runs in demo mode and plays saved story parts in the browser.
+With no Worker URL, the site tells a new story in the browser through the free Pollinations text API. No account, key, or fee is required. Add `?demo=1` to the address for saved demo stories.
 
 ## Run the site locally
 
@@ -17,7 +17,7 @@ python3 -m http.server 8080
 
 Open http://127.0.0.1:8080
 
-Leave `workerUrl` empty in `site/js/config.js` for demo mode.
+Leave `workerUrl` empty in `site/js/config.js` for Pollinations. Open http://127.0.0.1:8080/?demo=1 for demo mode.
 
 ## Run the Worker locally
 
@@ -75,11 +75,11 @@ The workflow in `.github/workflows/pages.yml` publishes the `site` folder when `
 
 The site address is https://jannesester.github.io/StoryForge/
 
-The published site stays in demo mode until `site/js/config.js` contains your Worker URL.
+The published site tells live stories through Pollinations until `site/js/config.js` contains your Worker URL. Demo stories stay available at `?demo=1`.
 
 ## Safety rules
 
-The Worker owns the age rules and the system prompt. The browser sends a name, an age group, a theme, and the story so far. It cannot supply a system prompt. Extra fields are ignored.
+Age rules and the story bible are shared by the page and the Worker. In Pollinations mode the page builds the prompt and checks free text before the call. A reader can still change that page, so the Worker is the stronger setup later: the same rules then run on the server, where the page cannot replace them.
 
 * Little kids, ages 4 to 7: very simple words, short sentences, kind characters, nothing scary.
 * Kids, ages 8 to 10: cozy adventure and simple mysteries, still nothing scary.
@@ -97,4 +97,12 @@ Themes depend on age. Mystery is hidden from little kids because suspense is eas
 
 * `site/` is the static site.
 * `worker/` is the Cloudflare Worker (`wrangler.jsonc`, source, and tests).
-* `site/js/catalog.js`, `site/js/safety.js`, and `site/js/fallback.js` are imported by both the site and the Worker, so demo mode and the server share the age list and the free text check.
+* `site/js/catalog.js`, `site/js/safety.js`, `site/js/craft.js`, `site/js/prompt.js`, `site/js/parse.js`, and `site/js/tell.js` are imported by both the site and the Worker, so demo mode, Pollinations, and the server share the age list, the story bible, and the free text check.
+
+## Story modes
+
+1. If `workerUrl` is set, the Worker tells the story and enforces the rules on the server.
+2. Otherwise the page calls Pollinations directly. Each new story gets a fresh story bible (setting, sidekick, twist, tone, structure, ending). A custom idea on the theme screen is checked before that call. If Pollinations fails or takes too long, the page shows a safe next step and the story keeps going.
+3. `?demo=1` plays saved demo parts and does not call a model.
+
+The Worker is the more robust option later, because the age rules then run server-side.
