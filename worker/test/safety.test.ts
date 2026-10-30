@@ -32,6 +32,12 @@ describe("screenReaderText", () => {
     if (!scene.ok) expect(scene.reason).toBe("minor");
   });
 
+  it("allows a gentle custom idea about being scared of the dark", () => {
+    expect(
+      screenReaderText("a dragon who is scared of the dark opens a bakery", "little-kids").ok,
+    ).toBe(true);
+  });
+
   it("allows a teen character in a non-sexual story", () => {
     expect(screenReaderText("the teenager solves the mystery", "adults").ok).toBe(true);
     expect(screenReaderText("a 7 year old finds a puppy", "little-kids").ok).toBe(true);

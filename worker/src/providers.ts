@@ -1,3 +1,4 @@
+import { STORY_TEMPERATURE } from "../../site/js/craft.js";
 import { storyResponseFormat } from "./parse.js";
 import type { ChatMessage } from "./messages.js";
 
@@ -35,7 +36,7 @@ export async function runWorkersAi(
   const base: Record<string, unknown> = {
     messages,
     max_tokens: maxTokens,
-    temperature: 0.7,
+    temperature: STORY_TEMPERATURE,
   };
   try {
     return await ai.run(model, { ...base, response_format: storyResponseFormat() });
@@ -73,7 +74,7 @@ function openAiResponseFormat(): Record<string, unknown> {
           options: {
             type: "array",
             items: { type: "string" },
-            minItems: 3,
+            minItems: 0,
             maxItems: 3,
           },
         },
@@ -98,7 +99,7 @@ export async function openAiChat(
     const body: Record<string, unknown> = {
       model,
       messages,
-      temperature: 0.7,
+      temperature: STORY_TEMPERATURE,
       max_tokens: maxTokens,
     };
     if (responseFormat) body.response_format = responseFormat;
